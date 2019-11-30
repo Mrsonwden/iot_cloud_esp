@@ -20,12 +20,13 @@
 #include "esp_log.h"
 #include "mqtt_client.h"
 #include "mqtt_topic.h"
+#include "commu_thread.h"
 
-static const char *TAG = "MQTT_EXAMPLE";
+static const char *TAG = "MQTT_MAIN";
 
 static EventGroupHandle_t wifi_event_group;
 const static int CONNECTED_BIT = BIT0;
-
+esp_mqtt_client_handle_t ucas_client;  //mqtt client for global;
 
 static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 {
@@ -35,6 +36,8 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
     switch (event->event_id) {
         case MQTT_EVENT_CONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
+            ucas_mqtt_sub(client, ucas_base_sub_topic, MAX_SUB_TOPIC,MQTT_QUALITY_0);
+
             ucas_mqtt_pub(client, ucas_base_pub_topic[0], "hello_world, I am esp32, the topic 0;" ,0,MQTT_QUALITY_0);
             ucas_mqtt_pub(client, ucas_base_pub_topic[1], "hello_world, I am esp32, the topic 1;" ,0,MQTT_QUALITY_0);
 
@@ -48,8 +51,13 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 
             // msg_id = esp_mqtt_client_unsubscribe(client, "/topic/qos1");
             // ESP_LOGI(TAG, "sent unsubscribe successful, msg_id=%d", msg_id);
+            ESP_LOGD(TAG, "ready creat communication_deal_thread");
+            if (xTaskCreate(communication_deal_thread, "communication_deal_thread", COMMU_THREAD_STACK_SIZE, client, COMMU_THREAD_TASK_PRIO, &communication_deal_thread_handle) != pdTRUE) {
+                ESP_LOGE(TAG, "Error create communication_deal_thread");
+                //err = ESP_FAIL;
+            }
+            ESP_LOGD(TAG, "creat communication_deal_thread finished");
 
-            ucas_mqtt_sub(client, ucas_base_sub_topic, MAX_SUB_TOPIC,MQTT_QUALITY_0);
             break;
         case MQTT_EVENT_DISCONNECTED:
             ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
@@ -70,6 +78,11 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
             ESP_LOGI(TAG, "MQTT_EVENT_DATA");
             printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
             printf("DATA=%.*s\r\n", event->data_len, event->data);
+
+            strncpy(buf_cloud_to_uart_topic,event->topic,event->topic_len);
+            strncpy(buf_cloud_to_uart_payload,event->data,event->data_len);
+            flag_receive_cloud_data = 1;
+            
             break;
         case MQTT_EVENT_ERROR:
             ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -159,8 +172,8 @@ static void mqtt_app_start(void)
     }
 #endif /* CONFIG_BROKER_URL_FROM_STDIN */
 
-    esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
-    esp_mqtt_client_start(client);
+    ucas_client = esp_mqtt_client_init(&mqtt_cfg);
+    esp_mqtt_client_start(ucas_client);
 }
 
 void app_main()
