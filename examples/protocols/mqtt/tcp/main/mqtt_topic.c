@@ -157,8 +157,8 @@ char ucas_mqtt_pub(esp_mqtt_client_handle_t client, const char base_pub_topic[],
      strcat(topic,"/"); 
      strcat(topic,base_pub_topic);
      ESP_LOGI(TAG, "pub topic  %s",topic);
-
-
+     ESP_LOGI(TAG, "pub payload  %s",payload);
+    
     if(-1 == esp_mqtt_client_publish(client,topic, payload, payload_len, qos, 0))
     {
        ESP_LOGI(TAG, "sent  pub  %s failed",topic);
@@ -167,29 +167,29 @@ char ucas_mqtt_pub(esp_mqtt_client_handle_t client, const char base_pub_topic[],
     else
     {
         ESP_LOGI(TAG, "sent pub  %s successed",topic);
-    }
-         
-     return 0;        
+    }     
+
+    return 0;        
 }
 
 
 void* sub_actor_set(char* para,int para_len)
 {
       ESP_LOGI(TAG, "sub_actor_set para %s ",para);
-
+      uart_write_bytes(EX_UART_NUM, (const char*) para,para_len);
       return NULL;
 }
 
 void* sub_actor_get(char* para,int para_len)
 {
       ESP_LOGI(TAG, "sub_actor_get para %s ",para);
-
+      uart_write_bytes(EX_UART_NUM, (const char*) para,para_len);  
       return NULL;
 }
 
 void* sub_sensor_get(char* para,int para_len)
 {
-      ESP_LOGI(TAG, "sub_sensor_get para %s ",para);
-
+      ESP_LOGI(TAG, "sub_sensor_get para %s ,uart will receive:",para);
+      uart_write_bytes(EX_UART_NUM, (const char*) para,para_len);
       return NULL;
 }

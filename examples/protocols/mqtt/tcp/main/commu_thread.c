@@ -40,10 +40,10 @@ extern  esp_mqtt_client_handle_t ucas_client;  //mqtt client for global;
             {
                 
                 //测试时注释，真实运行时，需要去掉注释；
-                //memset(buf_uart_to_cloud_payload,0,sizeof(buf_uart_to_cloud_payload));
-                //ucas_status_uart_data = NO_RECEIVED_UART_DATA;  
+                memset(buf_uart_to_cloud_payload,0,sizeof(buf_uart_to_cloud_payload));
+                ucas_status_uart_data = NO_RECEIVED_UART_DATA;  
                 //正式运行时注释；
-                ucas_status_uart_data =  RECEIVED_UART_DATA;     
+                //ucas_status_uart_data =  RECEIVED_UART_DATA;     
 
             }
             else 

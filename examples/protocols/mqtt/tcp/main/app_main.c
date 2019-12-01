@@ -21,6 +21,7 @@
 #include "mqtt_client.h"
 #include "mqtt_topic.h"
 #include "commu_thread.h"
+#include "data.h"
 
 static const char *TAG = "MQTT_MAIN";
 
@@ -190,12 +191,13 @@ void app_main()
     esp_log_level_set("TRANSPORT", ESP_LOG_VERBOSE);
     esp_log_level_set("OUTBOX", ESP_LOG_VERBOSE);
 
+    ucas_uart_init(115200);
     nvs_flash_init();
     wifi_init();
 
     register_topic_func("sub/actor/set",&sub_actor_set);
     register_topic_func("sub/actor/get",&sub_actor_get);
     register_topic_func("sub/sensor/get",&sub_sensor_get);
-    
+
     mqtt_app_start();
 }

@@ -4,7 +4,7 @@
 #include "mqtt_client.h"
 #include "esp_log.h"
 #include "string.h"
-
+#include "ucas_uart.h"
 
 #define MAX_BASE_TOPIC_LEN                  (30)
 #define MAX_TOPIC_LEN                       (MAX_BASE_TOPIC_LEN + 30)  
@@ -64,16 +64,6 @@ char register_topic_func(char* topic_str ,void (*func)(char* para,int para_len))
 void* sub_actor_set(char* para,int para_len);
 void* sub_actor_get(char* para,int para_len);
 void* sub_sensor_get(char* para,int para_len);
-
-
-
-
-
-
-
-
-
-
 
 
 
