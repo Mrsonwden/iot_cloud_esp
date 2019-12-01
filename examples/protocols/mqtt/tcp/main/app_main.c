@@ -81,8 +81,9 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 
             strncpy(buf_cloud_to_uart_topic,event->topic,event->topic_len);
             strncpy(buf_cloud_to_uart_payload,event->data,event->data_len);
-            flag_receive_cloud_data = 1;
-            
+            buf_cloud_to_uart_payload_len = event->data_len;
+            ucas_status_cloud_data = RECEIVED_CLOUD_DATA;
+
             break;
         case MQTT_EVENT_ERROR:
             ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -191,5 +192,10 @@ void app_main()
 
     nvs_flash_init();
     wifi_init();
+
+    register_topic_func("sub/actor/set",&sub_actor_set);
+    register_topic_func("sub/actor/get",&sub_actor_get);
+    register_topic_func("sub/sensor/get",&sub_sensor_get);
+    
     mqtt_app_start();
 }

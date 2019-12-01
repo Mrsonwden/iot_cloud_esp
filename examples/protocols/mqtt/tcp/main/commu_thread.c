@@ -11,32 +11,97 @@ extern  esp_mqtt_client_handle_t ucas_client;  //mqtt client for global;
     {
             vTaskDelay(100);
             ESP_LOGI(TAG, "communication_deal_thread running ");
-            if(flag_receive_uart_data)  //收到云端数据，则转发给云端。
+            if(NO_RECEIVED_UART_DATA == ucas_status_uart_data)
             {
-                if(-1 == ucas_mqtt_pub(ucas_client, ucas_base_pub_topic[0], buf_uart_to_cloud_payload ,0,MQTT_QUALITY_0))
+                   
+            }
+            else if(RECEIVED_UART_DATA == ucas_status_uart_data)  //收到云端数据，则转发给云端。
+            {
+                ESP_LOGI(TAG, "receive data form uart : %s",buf_uart_to_cloud_payload);
+                //测试时注释，真实运行时，需要去掉注释；
+                ucas_status_uart_data = DEALWITH_UART_DATA;  
+            }
+            else if(DEALWITH_UART_DATA == ucas_status_uart_data)
+            {
+                if( (-1) == ucas_mqtt_pub(ucas_client, ucas_base_pub_topic[0], buf_uart_to_cloud_payload ,0,MQTT_QUALITY_0))
                 {
                    ESP_LOGE(TAG, "ucas_mqtt_pub %s error",ucas_base_pub_topic[0]);
                 }
                 else
                 {
                    ESP_LOGI(TAG, "ucas_mqtt_pub %s success",ucas_base_pub_topic[0]);
-                   vTaskDelay(100); 
+                   vTaskDelay(10); 
                 }
-
                 //测试时注释，真实运行时，需要去掉注释；
-                // flag_receive_uart_data = 0;         
+                ucas_status_uart_data = FINISHED_UART_DATA;         
+
+            }
+            else if(FINISHED_UART_DATA == ucas_status_uart_data)
+            {
+                
+                //测试时注释，真实运行时，需要去掉注释；
                 //memset(buf_uart_to_cloud_payload,0,sizeof(buf_uart_to_cloud_payload));
+                //ucas_status_uart_data = NO_RECEIVED_UART_DATA;  
+                //正式运行时注释；
+                ucas_status_uart_data =  RECEIVED_UART_DATA;     
+
+            }
+            else 
+            {
+               ESP_LOGE(TAG, "error : ucas_status_uart_data is  : %d ",ucas_status_uart_data);
             }
 
-            if(flag_receive_cloud_data)  //收到云端的数据；
+
+            if(NO_RECEIVED_CLOUD_DATA == ucas_status_cloud_data)
+            {
+
+            }
+            else if(RECEIVED_CLOUD_DATA == ucas_status_cloud_data)  //收到云端的数据；
             {
                 ESP_LOGI(TAG, "receive data form cloud : %s :  %s",buf_cloud_to_uart_topic,buf_cloud_to_uart_payload);
+                
+                
 
-                flag_receive_cloud_data = 0;
+                ucas_status_cloud_data = DEALWITH_CLOUD_DATA;
+            }
+            else if(DEALWITH_CLOUD_DATA == ucas_status_cloud_data)
+            {
+                ESP_LOGI(TAG, "DEALWITH_CLOUD_DATA ing ");
+                //获取基本的topic；
+                char *base_topic = NULL;
+                char received_base_topic[MAX_BASE_TOPIC_LEN];
+                if( NULL != (base_topic = strstr(buf_cloud_to_uart_topic,flag_base_sub_topic)) )
+                {
+                       strcpy(received_base_topic,base_topic);
+                }
+                else
+                {
+                       ESP_LOGI(TAG, "error : receive  buf_cloud_to_uart_topic : %s ",buf_cloud_to_uart_topic);
+                }
+                
+                int i = 0;
+                for(i = 0; i <MAX_SUB_TOPIC ; i++)  //这里可以改进成搜索有效的数组，而不是全部；
+                {
+                    if(0 == strcmp(kv_ucas_sub_topic_func[i].sub_topic,received_base_topic))
+                    {
+                            kv_ucas_sub_topic_func[i].func(buf_cloud_to_uart_payload,buf_cloud_to_uart_payload_len);  //对对应的topic数据进行处理。
+                    }
+                    
+                }
+
+                ucas_status_cloud_data = FINISHED_CLOUD_DATA;
+            }
+            else if(FINISHED_CLOUD_DATA == ucas_status_cloud_data)
+            {
+                ESP_LOGI(TAG, "FINISHED_CLOUD_DATA ing "); 
                 memset(buf_cloud_to_uart_topic,0,sizeof(buf_cloud_to_uart_topic));
                 memset(buf_cloud_to_uart_payload,0,sizeof(buf_cloud_to_uart_payload));
+                ucas_status_cloud_data = NO_RECEIVED_CLOUD_DATA;
             }
-           
+            else 
+            {
+                ESP_LOGE(TAG, "error : ucas_status_cloud_data is  : %d ",ucas_status_cloud_data);
+            }
     }
 //     esp_mqtt_client_handle_t client = (esp_mqtt_client_handle_t) pv;
 //     uint32_t last_retransmit = 0;
